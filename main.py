@@ -62,6 +62,13 @@ def submit_registration(username, password, confirm_password, email, reg_window)
         return
     messagebox.showinfo("Registration Complete", f"Registered {username} with email {email}.")
     reg_window.destroy()
+    
+def open_admin_dashboard(username):
+    dashboard_window = ctk.CTkToplevel(root)
+    dashboard_window.title("Admin Dashboard")
+    dashboard_window.geometry("400x300")
+    welcome_label = ctk.CTkLabel(dashboard_window, text=f"Welcome, {username}! This is the admin dashboard.")
+    welcome_label.pack(pady=20)
 
 def open_registration():
     reg_window = ctk.CTkToplevel(root)
