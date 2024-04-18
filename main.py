@@ -16,26 +16,45 @@ def on_login_pressed():
 def open_candidate_selection(username):
     selection_window = ctk.CTkToplevel(root)
     selection_window.title("Select Candidate")
-    selection_window.geometry("400x300")
+    selection_window.geometry("600x400")
 
-    ctk.CTkLabel(selection_window, text=f"Hello, {username}! Please select a candidate:").pack(pady=20)
+    selection_frame = ctk.CTkFrame(selection_window)
+    selection_frame.pack(side="left", fill="both", expand=True)
 
-    candidates = ["Candidate A", "Candidate B", "Candidate C", "Candidate D"]
-    for candidate in candidates:
-        button = ctk.CTkButton(selection_window, text=candidate,
-                               command=lambda c=candidate: candidate_selected(c, selection_window))
+    info_frame = ctk.CTkFrame(selection_window)
+    info_frame.pack(side="right", fill="both", expand=True)
+
+    ctk.CTkLabel(selection_frame, text=f"Hello, {username}! Please select a candidate:").pack(pady=20)
+
+    candidates = {
+        "Candidate A": "Details about Candidate A: Experience, vision, etc.",
+        "Candidate B": "Details about Candidate B: Experience, vision, etc.",
+        "Candidate C": "Details about Candidate C: Experience, vision, etc.",
+        "Candidate D": "Details about Candidate D: Experience, vision, etc."
+    }
+
+    info_text = ctk.CTkLabel(info_frame, text="", wraplength=250)
+    info_text.pack(pady=20)
+
+    vote_button = ctk.CTkButton(info_frame, text="Vote", state="disabled",
+                                command=lambda: cast_vote(selected_candidate.get(), selection_window))
+    vote_button.pack(pady=10)
+
+    selected_candidate = ctk.StringVar(value="")  # Track the selected candidate
+
+    for candidate, details in candidates.items():
+        button = ctk.CTkButton(selection_frame, text=candidate,
+                               command=lambda c=candidate, d=details: update_info(info_text, vote_button, c, d, selected_candidate))
         button.pack(pady=10)
 
-def candidate_selected(candidate, window):
-    messagebox.showinfo("Candidate Selected", f"You have selected {candidate}.")
-    window.destroy()
+def update_info(info_label, vote_button, candidate, details, selected_candidate):
+    info_label.configure(text=f"{candidate}: {details}")
+    selected_candidate.set(candidate)
+    vote_button.configure(state="normal")  # Enable the vote button after a candidate is selected
 
-def open_admin_dashboard(username):
-    dashboard_window = ctk.CTkToplevel(root)
-    dashboard_window.title("Admin Dashboard")
-    dashboard_window.geometry("400x300")
-
-    ctk.CTkLabel(dashboard_window, text=f"Welcome, {username}! This is the admin dashboard.").pack(pady=20)
+def cast_vote(candidate, window):
+    messagebox.showinfo("Vote Cast", f"You have voted for {candidate}.")
+    window.destroy()  # Optionally close the selection window after voting
 
 def submit_registration(username, password, confirm_password, email, reg_window):
     if password != confirm_password:
@@ -78,27 +97,22 @@ root = ctk.CTk()
 root.title("Login Interface")
 root.geometry("400x300")
 
-# Username Entry
 username_entry = ctk.CTkEntry(root, placeholder_text="Username", width=300, height=40)
 username_entry.grid(row=0, column=1, padx=20, pady=10, columnspan=2)
 ctk.CTkLabel(root, text="Username:").grid(row=0, column=0, sticky="e")
 
-# Password Entry
 password_entry = ctk.CTkEntry(root, show="*", placeholder_text="Password", width=300, height=40)
 password_entry.grid(row=1, column=1, padx=20, pady=10, columnspan=2)
 ctk.CTkLabel(root, text="Password:").grid(row=1, column=0, sticky="e")
 
-# Role Combobox
 role_combobox = ctk.CTkComboBox(root, values=["User", "Administrator"], width=300, height=40)
 role_combobox.set("User")  # Default to 'User'
 role_combobox.grid(row=2, column=1, padx=20, pady=10, columnspan=2)
 ctk.CTkLabel(root, text="Role:").grid(row=2, column=0, sticky="e")
 
-# Login Button
 login_button = ctk.CTkButton(root, text="Login", command=on_login_pressed)
 login_button.grid(row=3, column=0, columnspan=2, pady=20, sticky="ew")
 
-# Register Button
 register_button = ctk.CTkButton(root, text="Register", command=open_registration)
 register_button.grid(row=4, column=0, columnspan=2, pady=10, sticky="ew")
 
