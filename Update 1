@@ -1,0 +1,217 @@
+import customtkinter as ctk
+from tkinter import messagebox
+import json
+import os
+
+#def on_login_pressed():
+#    username = username_entry.get()
+#    password = password_entry.get()
+#    role = role_combobox.get()
+
+#    if username == "user" and password == "password" and role == "User":
+#        open_candidate_selection(username)
+#    elif username == "admin" and password == "admin123" and role == "Administrator":
+#        open_admin_dashboard(username)
+#    else:
+#        messagebox.showerror("Login Failed", "Invalid credentials or role selection.")
+
+def load_user_data_from_json(filename):
+    try:
+        with open(filename, "r") as file:
+            data = json.load(file)
+            return data.get("user", [])
+    except FileNotFoundError:
+        return []
+
+def on_login_pressed():
+    username = username_entry.get()
+    password = password_entry.get()
+    role = role_combobox.get()
+
+    user_data = UserData()
+    user_data.load_from_json("user_data.json")
+
+    if username in user_data.user and password in user_data.password and role == "User":
+        open_candidate_selection(username)
+    elif username == "admin" and password == "admin123" and role == "Administrator":
+        open_admin_dashboard(username)
+    else:
+        messagebox.showerror("Login Failed", "Invalid credentials or role selection.")
+class UserData:
+    def __init__(self):
+        self.user = []
+        self.password = []
+        self.email = []
+
+    def save_to_json(self, filename):
+        data = {
+            "user": self.user,
+            "password": self.password,
+            "email": self.email
+        }
+
+        with open(filename, "w") as file:
+            json.dump(data, file, indent=4)
+
+    def load_from_json(self, filename):
+        if os.path.isfile(filename):
+            with open(filename, "r") as file:
+                data = json.load(file)
+                self.user = data.get("user", [])
+                self.password = data.get("password", [])
+                self.email = data.get("email", [])
+        else:
+            print(f"The file {filename} does not exist. Creating a new file.")
+            default_data = {
+                "user": [],
+                "password": [],
+                "email": []
+            }
+            with open(filename, "w") as json_file:
+                json.dump(default_data, json_file, indent=4)
+            print(f"New file {filename} created.")
+
+def open_candidate_selection(username):
+    selection_window = ctk.CTkToplevel(root)
+    selection_window.title("Select Candidate")
+    selection_window.geometry("400x300")
+
+    ctk.CTkLabel(selection_window, text=f"Hello, {username}! Please select a candidate:").pack(pady=20)
+
+    candidates = ["Candidate A", "Candidate B", "Candidate C", "Candidate D"]
+    for candidate in candidates:
+        button = ctk.CTkButton(selection_window, text=candidate,
+                               command=lambda c=candidate: candidate_selected(c, selection_window))
+        button.pack(pady=10)
+
+def candidate_selected(candidate, window):
+    messagebox.showinfo("Candidate Selected", f"You have selected {candidate}.")
+    window.destroy()
+
+def open_admin_dashboard(username):
+    dashboard_window = ctk.CTkToplevel(root)
+    dashboard_window.title("Admin Dashboard")
+    dashboard_window.geometry("400x300")
+
+    ctk.CTkLabel(dashboard_window, text=f"Welcome, {username}! This is the admin dashboard.").pack(pady=20)
+
+#def submit_registration(username, password, confirm_password, email, reg_window):
+#    if password != confirm_password:
+#        messagebox.showerror("Error", "Passwords do not match.")
+#        return
+#    messagebox.showinfo("Registration Complete", f"Registered {username} with email {email}.")
+#    reg_window.destroy()
+
+class Register(UserData):
+  def __init__(self, root):
+        super().__init__()
+        self.root = root
+        self.root.title("Register")
+        self.data = UserData()
+        self.data.load_from_json("user_data.json")
+
+  def open_registration(self):
+      self.reg_window = ctk.CTkToplevel(self.root)
+      self.reg_window.title("Register")
+      self.reg_window.geometry("400x300")
+
+    # Username entry
+      self.username_entry = ctk.CTkEntry(self.reg_window, placeholder_text="Username", width=300, height=40)
+      self.username_entry.grid(row=0, column=1, padx=20, pady=10)
+      ctk.CTkLabel(self.reg_window, text="Username:").grid(row=0, column=0, sticky="e")
+
+    # Password entry
+      self.password_entry = ctk.CTkEntry(self.reg_window, placeholder_text="Password", show="*", width=300, height=40)
+      self.password_entry.grid(row=1, column=1, padx=20, pady=10)
+      ctk.CTkLabel(self.reg_window, text="Password:").grid(row=1, column=0, sticky="e")
+
+    # Confirm password entry
+      self.confirm_password_entry = ctk.CTkEntry(self.reg_window, placeholder_text="Confirm Password", show="*", width=300, height=40)
+      self.confirm_password_entry.grid(row=2, column=1, padx=20, pady=10)
+      ctk.CTkLabel(self.reg_window, text="Confirm Password:").grid(row=2, column=0, sticky="e")
+
+    # Email entry
+      self.email_entry = ctk.CTkEntry(self.reg_window, placeholder_text="Email", width=300, height=40)
+      self.email_entry.grid(row=3, column=1, padx=20, pady=10)
+      ctk.CTkLabel(self.reg_window, text="Email:").grid(row=3, column=0, sticky="e")
+
+    # Submit button
+      self.submit_button = ctk.CTkButton(self.reg_window, text="Submit", command=self.submit_registration)
+      self.submit_button.grid(row=4, column=0, columnspan=2, pady=20, sticky="ew")
+
+  def submit_registration(self):
+      username = self.username_entry.get()
+      password = self.password_entry.get()
+      confirm_password = self.confirm_password_entry.get()
+      email = self.email_entry.get()
+
+      # Validate input (e.g., check if passwords match)
+      if password != confirm_password:
+          print("Error: Passwords do not match.")
+          return
+
+      # Append the new user data to the respective lists
+      self.user.append(username)
+      self.password.append(password)
+      self.email.append(email)
+
+      # Save data to JSON
+      try:
+          self.save_to_json("user_data.json")
+          print("Data saved successfully!")
+      except Exception as e:
+          print(f"Error saving data: {str(e)}")
+
+      # Show a success message (you can use a messagebox here)
+      print("Registration successful!")
+
+root = ctk.CTk()
+
+
+root.title("Login Interface")
+root.geometry("400x300")
+
+# Username Entry
+username_entry = ctk.CTkEntry(root, placeholder_text="Username", width=300, height=40)
+username_entry.grid(row=0, column=1, padx=20, pady=10, columnspan=2)
+ctk.CTkLabel(root, text="Username:").grid(row=0, column=0, sticky="e")
+
+# Password Entry
+password_entry = ctk.CTkEntry(root, show="*", placeholder_text="Password", width=300, height=40)
+password_entry.grid(row=1, column=1, padx=20, pady=10, columnspan=2)
+ctk.CTkLabel(root, text="Password:").grid(row=1, column=0, sticky="e")
+
+# Role Combobox
+role_combobox = ctk.CTkComboBox(root, values=["User", "Administrator"], width=300, height=40)
+role_combobox.set("User")  # Default to 'User'
+role_combobox.grid(row=2, column=1, padx=20, pady=10, columnspan=2)
+ctk.CTkLabel(root, text="Role:").grid(row=2, column=0, sticky="e")
+
+# Login Button
+login_button = ctk.CTkButton(root, text="Login", command=on_login_pressed)
+login_button.grid(row=3, column=0, columnspan=2, pady=20, sticky="ew")
+
+res = Register(root)
+
+# Register Button
+register_button = ctk.CTkButton(root, text="Register", command=res.open_registration)
+register_button.grid(row=4, column=0, columnspan=2, pady=10, sticky="ew")
+
+
+if __name__ == "__main__":
+    user_data = UserData()
+    user_data.load_from_json("user_data.json")
+
+
+    register_app = Register(root)
+
+    register_app.open_registration()
+
+    user_data.save_to_json("user_data.json")
+
+
+    # Load user data from the JSON file (e.g., "user_data.json")
+    # Print loaded user data (for verification)
+    print("Loaded user data:", user_data.user, user_data.password, user_data.email)
+
+    root.mainloop()
