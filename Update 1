@@ -31,27 +31,20 @@ def on_login_pressed():
     user_data = UserData()
     user_data.load_from_json("user_data.json")
 
-    if username in user_data.user and password in user_data.password and role == "User":
-        open_candidate_selection(username)
-    elif username == "admin" and password == "admin123" and role == "Administrator":
-        open_admin_dashboard(username)
+    if user_data.authenticate_user(username, password):
+        if role == "User":
+            open_candidate_selection(username)
+        elif username == "admin" and password == "admin123" and role == "Administrator":
+            open_admin_dashboard(username)
+        else:
+            messagebox.showerror("Login Failed", "Invalid role selection.")
     else:
-        messagebox.showerror("Login Failed", "Invalid credentials or role selection.")
+        messagebox.showerror("Login Failed", "Invalid credentials.")
 class UserData:
     def __init__(self):
         self.user = []
         self.password = []
         self.email = []
-
-    def save_to_json(self, filename):
-        data = {
-            "user": self.user,
-            "password": self.password,
-            "email": self.email
-        }
-
-        with open(filename, "w") as file:
-            json.dump(data, file, indent=4)
 
     def load_from_json(self, filename):
         if os.path.isfile(filename):
@@ -60,6 +53,7 @@ class UserData:
                 self.user = data.get("user", [])
                 self.password = data.get("password", [])
                 self.email = data.get("email", [])
+                return data
         else:
             print(f"The file {filename} does not exist. Creating a new file.")
             default_data = {
@@ -71,29 +65,88 @@ class UserData:
                 json.dump(default_data, json_file, indent=4)
             print(f"New file {filename} created.")
 
+    def save_to_json(self, filename):
+        data = {
+            "user": self.user,
+            "password": self.password,
+            "email": self.email
+        }
+
+        with open(filename, "w") as file:
+            json.dump(data, file, indent=4)
+
+    def authenticate_user(self, username, password):
+        # Check if the entered username exists
+        if username in self.user:
+            # Get the index of the username
+            index = self.user.index(username)
+            # Check if the stored password at the same index matches the entered password
+            if self.password[index] == password:
+                return True
+        return False
+
 def open_candidate_selection(username):
     selection_window = ctk.CTkToplevel(root)
     selection_window.title("Select Candidate")
-    selection_window.geometry("400x300")
+    selection_window.geometry("600x400")
 
-    ctk.CTkLabel(selection_window, text=f"Hello, {username}! Please select a candidate:").pack(pady=20)
+    selection_frame = ctk.CTkFrame(selection_window)
+    selection_frame.pack(side="left", fill="both", expand=True)
 
-    candidates = ["Candidate A", "Candidate B", "Candidate C", "Candidate D"]
-    for candidate in candidates:
-        button = ctk.CTkButton(selection_window, text=candidate,
-                               command=lambda c=candidate: candidate_selected(c, selection_window))
+    info_frame = ctk.CTkFrame(selection_window)
+    info_frame.pack(side="right", fill="both", expand=True)
+
+    ctk.CTkLabel(selection_frame, text=f"Hello, {username}! Please select a candidate:").pack(pady=20)
+
+    candidates = {
+        "Candidate A": "Details about Candidate A: Experience, vision, etc.",
+        "Candidate B": "Details about Candidate B: Experience, vision, etc.",
+        "Candidate C": "Details about Candidate C: Experience, vision, etc.",
+        "Candidate D": "Details about Candidate D: Experience, vision, etc."
+    }
+
+    info_text = ctk.CTkLabel(info_frame, text="", wraplength=250)
+    info_text.pack(pady=20)
+
+    vote_button = ctk.CTkButton(info_frame, text="Vote", state="disabled",
+                                command=lambda: cast_vote(selected_candidate.get(), selection_window, username))
+    vote_button.pack(pady=10)
+
+    selected_candidate = ctk.StringVar(value="")  # Track the selected candidate
+
+    for candidate, details in candidates.items():
+        button = ctk.CTkButton(selection_frame, text=candidate,
+                               command=lambda c=candidate, d=details: update_info(info_text, vote_button, c, d, selected_candidate))
         button.pack(pady=10)
 
-def candidate_selected(candidate, window):
-    messagebox.showinfo("Candidate Selected", f"You have selected {candidate}.")
-    window.destroy()
+def update_info(info_label, vote_button, candidate, details, selected_candidate):
+    info_label.configure(text=f"{candidate}: {details}")
+    selected_candidate.set(candidate)
+    vote_button.configure(state="normal")  # Enable the vote button after a candidate is selected
+
+def cast_vote(candidate, window, username):
+    messagebox.showinfo("Vote Cast", f"You have voted for {candidate}.")
+    window.destroy()  # Optionally close the selection window after voting
+    vote_data[candidate].append(username)
+    display_vote_counts()
+
+vote_data = {
+    "Candidate A": [],
+    "Candidate B": [],
+    "Candidate C": [],
+    "Candidate D": []
+}
+
+def display_vote_counts():
+    for candidate, votes in vote_data.items():
+        print(f"{candidate}: {len(votes)} votes")
 
 def open_admin_dashboard(username):
     dashboard_window = ctk.CTkToplevel(root)
     dashboard_window.title("Admin Dashboard")
     dashboard_window.geometry("400x300")
-
-    ctk.CTkLabel(dashboard_window, text=f"Welcome, {username}! This is the admin dashboard.").pack(pady=20)
+    welcome_label = ctk.CTkLabel(dashboard_window, text=f"Welcome, {username}! This is the admin dashboard.")
+    welcome_label.pack(pady=20)
 
 #def submit_registration(username, password, confirm_password, email, reg_window):
 #    if password != confirm_password:
@@ -145,10 +198,17 @@ class Register(UserData):
       confirm_password = self.confirm_password_entry.get()
       email = self.email_entry.get()
 
+      self.load_from_json("user_data.json")
+
       # Validate input (e.g., check if passwords match)
       if password != confirm_password:
-          print("Error: Passwords do not match.")
+          messagebox.showerror("Error", "Passwords do not match.")
           return
+      elif email == "" or username == "" or password == "":
+          messagebox.showerror("Error", "Input all required information")
+          return
+      messagebox.showinfo("Registration Complete", f"Registered {username} with email {email}.")
+      self.reg_window.destroy()
 
       # Append the new user data to the respective lists
       self.user.append(username)
@@ -198,17 +258,16 @@ register_button = ctk.CTkButton(root, text="Register", command=res.open_registra
 register_button.grid(row=4, column=0, columnspan=2, pady=10, sticky="ew")
 
 
+
 if __name__ == "__main__":
     user_data = UserData()
+
     user_data.load_from_json("user_data.json")
 
+    display_vote_counts()
 
-    register_app = Register(root)
-
-    register_app.open_registration()
 
     user_data.save_to_json("user_data.json")
-
 
     # Load user data from the JSON file (e.g., "user_data.json")
     # Print loaded user data (for verification)
