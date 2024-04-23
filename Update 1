@@ -34,10 +34,8 @@ def on_login_pressed():
     if user_data.authenticate_user(username, password):
         if role == "User":
             open_candidate_selection(username)
-        elif username == "admin" and password == "admin123" and role == "Administrator":
+    elif username == "admin" and password == "admin123" and role == "Administrator":
             open_admin_dashboard(username)
-        else:
-            messagebox.showerror("Login Failed", "Invalid role selection.")
     else:
         messagebox.showerror("Login Failed", "Invalid credentials.")
 class UserData:
