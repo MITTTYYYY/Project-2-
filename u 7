@@ -541,21 +541,24 @@ res = Register(root)
 register_button = ctk.CTkButton(root, text="Register", command=res.open_registration)
 register_button.grid(row=4, column=0, columnspan=2, pady=10, sticky="ew")
 
-plt.style.use("fivethirtyeight")
+try:
 
-slices = []
-labels = []
+    plt.style.use("fivethirtyeight")
 
-for candidates, votes in VoteManager().load_from_json1("candidate_vote.json").items():
-    slices.append(len(votes))
-    labels.append(candidates)
+    slices = []
+    labels = []
 
-plt.pie(slices, labels=labels, autopct='%1.1f%%')
+    for candidates, votes in VoteManager().load_from_json1("candidate_vote.json").items():
+        slices.append(len(votes))
+        labels.append(candidates)
 
-print(slices)
+    plt.pie(slices, labels=labels, autopct='%1.1f%%')
 
-plt.title("")
-plt.tight_layout()
+    plt.title("")
+    plt.tight_layout()
+
+except Exception as e:
+    pass
 
 if __name__ == "__main__":
     user_data = UserData()
